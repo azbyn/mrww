@@ -71,7 +71,7 @@ sub toEnglish {
     #print("translated '$out'");
 }
 sub fromEnglish() {
-    my $in = `rofi -dmenu`;
+    my $in = `rofi -dmenu -p 'Input'`;
     $in =~ s/\s+$//;
     if ($in eq "") { exit(); }
 
