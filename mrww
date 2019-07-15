@@ -53,6 +53,8 @@ sub toEnglish {
             $str .= "$lang\n";
         }
     }
+
+    $str =~ s/\s+$//;
     my $res = `echo "$str" | rofi -dmenu -p "$in"`;#"Input Language'`;
     unless ($res =~ m/(.+) - (.+)/) { exit(); }
     my $lang = $1;
@@ -74,9 +76,14 @@ sub fromEnglish() {
     if ($in eq "") { exit(); }
 
     my $str = "";
+    # show English as last language as it's quite pointless to translate from
+    # English to English
+    my $eng = shift @languages;
+    push @languages, $eng;
     for my $lang (@languages) {
         $str .= "$lang\n";
     }
+    $str =~ s/\s+$//;
     my $res = `echo "$str" | rofi -dmenu -p 'Output Language'`;
     unless ($res =~ m/(.+) - (.+)/) { exit(); }
     my $lang = $1;
