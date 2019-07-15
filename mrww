@@ -1,0 +1,117 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+
+use IPC::Run 'run';
+use IPC::Open2;
+
+my @languages = (
+    "en - English",
+    "ru - Russian",
+    "de - German",
+    "pl - Polish",
+    "es - Spanish",
+    "it - Italian",
+    "fr - French",
+    "el - Greek",
+    "sr-Cyrl - Serbian Cyrillic",
+    "sr-Latn - Serbian Latin",
+    "be - Belarusian",
+    "bg - Bulgarian",
+    "uk - Ukrainian",
+    "ja - Japanese",
+    "cs - Czech",
+    "pt - Portuguese",
+    "hu - Hungarian",
+    "da - Danish",
+    "nl - Dutch",
+    "la - Latin",
+    "fi - Finnish",
+    "ro - Romanian",
+);
+sub toEnglish {
+    my $in = `xsel --clipboard`;
+    #run ["xsel", "--clipboard"], ">", \my $in;
+    run ["trans", "-identify", "-no-ansi", $in], ">", \my $identify;
+    my $name;
+    my $code;
+
+    #print("ident '$identify'");
+
+    if ($identify =~ m/Name +(\w*)/) {
+        $name = $1;
+    } else { exit(); }
+    if ($identify =~ m/Code +(\w*)/) {
+        $code = $1;
+    } else { exit(); }
+
+    print("code : $code - $name\n");
+
+    my $str = "$code - $name\n";
+    for my $lang (@languages) {
+        unless ($lang =~ m/\A$code/) {
+            $str .= "$lang\n";
+        }
+    }
+    my $res = `echo "$str" | rofi -dmenu -p "$in"`;#"Input Language'`;
+    unless ($res =~ m/(.+) - (.+)/) { exit(); }
+    my $lang = $1;
+    my $lang_name = $2;
+    #print("lang_name $lang_name\n");
+
+    run ["trans", "-b", "$lang:en", $in], ">", \my $out;
+    $out =~ s/\s+$//;
+
+
+    run ["rofi", "-e", "$lang_name: $in\n\nEnglish: $out"];
+#`echo 'yesno' | dmenu -e '""$in = $out'`;
+
+    #print("translated '$out'");
+}
+sub fromEnglish() {
+    my $in = `rofi -dmenu`;
+    $in =~ s/\s+$//;
+    if ($in eq "") { exit(); }
+
+    my $str = "";
+    for my $lang (@languages) {
+        $str .= "$lang\n";
+    }
+    my $res = `echo "$str" | rofi -dmenu -p 'Output Language'`;
+    unless ($res =~ m/(.+) - (.+)/) { exit(); }
+    my $lang = $1;
+    my $lang_name = $2;
+
+    run ["trans", "-b", "en:$lang", $in], ">", \my $out;
+    $out =~ s/\s+$//;
+
+
+    print("in: '$in'\n");
+    print("out: '$out'\n");
+    run ["rofi", "-e", "English: $in\n\n$lang_name: $out"];
+
+    open CB, "| xsel -i -b";
+    print CB $out;
+    close CB;
+}
+my ($type) = @ARGV;
+if (not defined $type) {
+    die("please use 'mrww to' or 'mrww from'\n");
+}
+if ($type eq "to") {
+    toEnglish();
+}
+elsif ($type eq "from") {
+    fromEnglish();
+}
+else {
+    die("please use 'mrww to' or 'mrww from'\n");
+}
+
+
+
+#system(@cmd);
+#open CB, "| xsel -i -b";
+#print $pass;
+#print CB $out;
+#close CB;
